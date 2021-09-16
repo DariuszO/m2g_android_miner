@@ -29,12 +29,12 @@ public class PoolItem {
         this.mApiUrlMerged = apiUrlMerged;
     }
 
-    public void setId(int id) {
-        this.mId = id;
-    }
-
     public int getId() {
         return this.mId;
+    }
+
+    public void setId(int id) {
+        this.mId = id;
     }
 
     public String getKey() {

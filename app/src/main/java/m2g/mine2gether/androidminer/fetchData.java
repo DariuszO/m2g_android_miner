@@ -8,6 +8,7 @@ import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.ocpsoft.prettytime.PrettyTime;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,8 +21,6 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Date;
-
-import org.ocpsoft.prettytime.PrettyTime;
 
 public class fetchData extends AsyncTask<Void, Void, Void> {
 
@@ -46,10 +45,6 @@ public class fetchData extends AsyncTask<Void, Void, Void> {
     private int ErrorNetworkMerged = 0;
 
     private statsChangeListener listener = null;
-
-    public interface statsChangeListener {
-        public void onStatsChange(String addressStats, String networkStats);
-    }
 
     public void setStatsChangeListener(statsChangeListener listener) {
         if (this.listener != null) this.listener = null;
@@ -314,5 +309,9 @@ public class fetchData extends AsyncTask<Void, Void, Void> {
         }
 
         raiseStatsChange(sDataAddress, sDataNetwork);
+    }
+
+    public interface statsChangeListener {
+        public void onStatsChange(String addressStats, String networkStats);
     }
 }

@@ -30,8 +30,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="15dp"
-                android:paddingBottom="25dp"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingBottom="25dp">
 
                 <android.support.v7.widget.AppCompatTextView
                     android:id="@+id/cpuText"
@@ -77,10 +77,10 @@
                         </LinearLayout>
 
                         <NumberPicker
-                            android:theme="@style/DefaultNumberPickerTheme"
                             android:id="@+id/cores"
                             android:layout_width="75dp"
-                            android:layout_height="75dp" />
+                            android:layout_height="75dp"
+                            android:theme="@style/DefaultNumberPickerTheme" />
 
                     </LinearLayout>
 
@@ -99,10 +99,10 @@
 
 
                         <NumberPicker
-                            android:theme="@style/DefaultNumberPickerTheme"
                             android:id="@+id/threads"
                             android:layout_width="75dp"
-                            android:layout_height="75dp" />
+                            android:layout_height="75dp"
+                            android:theme="@style/DefaultNumberPickerTheme" />
 
                     </LinearLayout>
 
@@ -120,10 +120,10 @@
                             android:text="Intensity" />
 
                         <NumberPicker
-                            android:theme="@style/DefaultNumberPickerTheme"
                             android:id="@+id/intensity"
                             android:layout_width="75dp"
-                            android:layout_height="75dp" />
+                            android:layout_height="75dp"
+                            android:theme="@style/DefaultNumberPickerTheme" />
 
                     </LinearLayout>
 

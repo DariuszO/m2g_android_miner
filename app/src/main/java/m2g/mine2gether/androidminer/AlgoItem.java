@@ -11,7 +11,7 @@ public class AlgoItem {
     private int mId = 0;
     private String mAlgo = "";
     private ArrayList<MinerItem> mMiners;
-    private String mDefaultMiner  = "";
+    private String mDefaultMiner = "";
 
     public AlgoItem(String algo, String defaultMiner, ArrayList<MinerItem> miners) {
         this.mAlgo = algo;
@@ -20,12 +20,12 @@ public class AlgoItem {
         mDefaultMiner = defaultMiner;
     }
 
-    public void setId(int id){
-        this.mId = id;
+    public int getId() {
+        return this.mId;
     }
 
-    public int getId(){
-        return this.mId;
+    public void setId(int id) {
+        this.mId = id;
     }
 
     public String getAlgo() {

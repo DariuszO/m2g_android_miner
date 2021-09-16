@@ -4,13 +4,11 @@
 
 package m2g.mine2gether.androidminer;
 
-import android.support.design.widget.NavigationView;
-import android.support.v4.widget.DrawerLayout;
 import android.content.Context;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.Html;
@@ -20,16 +18,16 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.NumberPicker;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.AdapterView;
-import android.widget.NumberPicker;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,7 +40,6 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 public class SettingsFragment extends Fragment {
 
@@ -387,6 +384,15 @@ public class SettingsFragment extends Fragment {
         return view;
     }
 
+    private void selectSpinnerValue(Spinner spinner, String value) {
+        for (int i = 0; i < spinner.getCount(); i++) {
+            if (spinner.getItemAtPosition(i).toString().equals(value)) {
+                spinner.setSelection(i);
+                break;
+            }
+        }
+    }
+
     public class PoolSpinAdapter extends ArrayAdapter<PoolItem> {
 
         private Context context;
@@ -521,15 +527,6 @@ public class SettingsFragment extends Fragment {
             label.setText(values.get(position).getMiner());
             label.setPadding(5, 10, 5, 10);
             return label;
-        }
-    }
-
-    private void selectSpinnerValue(Spinner spinner, String value) {
-        for (int i = 0; i < spinner.getCount(); i++) {
-            if (spinner.getItemAtPosition(i).toString().equals(value)) {
-                spinner.setSelection(i);
-                break;
-            }
         }
     }
 

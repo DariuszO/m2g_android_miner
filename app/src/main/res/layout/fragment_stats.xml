@@ -26,16 +26,15 @@
                 android:id="@+id/statCheckOnline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:gravity="end"/>
+                android:gravity="end"
+                android:padding="5dp" />
 
             <android.support.v7.widget.AppCompatTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:text="Your Stats"
                 android:gravity="center"
-                />
+                android:padding="5dp"
+                android:text="Your Stats" />
 
             <android.support.v7.widget.AppCompatTextView
                 android:id="@+id/fetchdata"
@@ -46,10 +45,9 @@
             <android.support.v7.widget.AppCompatTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="5dp"
-                android:text="Network Stats"
                 android:gravity="center"
-                />
+                android:padding="5dp"
+                android:text="Network Stats" />
 
             <android.support.v7.widget.AppCompatTextView
                 android:id="@+id/fetchdataNetwork"

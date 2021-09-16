@@ -17,12 +17,12 @@ public class MinerItem {
         this.mMiner = miner;
     }
 
-    public void setId(int id){
-        this.mId = id;
+    public int getId() {
+        return this.mId;
     }
 
-    public int getId(){
-        return this.mId;
+    public void setId(int id) {
+        this.mId = id;
     }
 
     public String getAlgo() {
@@ -33,7 +33,7 @@ public class MinerItem {
         return this.mAssetExtenstion;
     }
 
-    public String getMiner(){
+    public String getMiner() {
         return this.mMiner;
     }
 

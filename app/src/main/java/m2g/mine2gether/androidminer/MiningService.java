@@ -22,17 +22,18 @@
 
 package m2g.mine2gether.androidminer;
 
+import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
+
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Binder;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
-import android.os.AsyncTask;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -46,12 +47,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
-import static android.os.PowerManager.*;
-
 public class MiningService extends Service {
 
     private static final String LOG_TAG = "MiningSvc";
     private final static String[] SUPPORTED_ARCHITECTURES = {"arm64-v8a", "armeabi-v7a", "x86", "x86_64"};
+    Boolean mMiningServiceState = false;
     private Process process;
     private String configTemplate;
     private String privatePath;
@@ -65,6 +65,33 @@ public class MiningService extends Service {
     private String lastAssetPath;
     private String lastOutput = "";
     private String assetExtension = "";
+    private MiningServiceStateListener listener = null;
+
+    private static String createCpuConfig(int cores, int threads, int intensity) {
+
+        String cpuConfig = "";
+
+        for (int i = 0; i < cores; i++) {
+            for (int j = 0; j < threads; j++) {
+                if (cpuConfig.equals("") == false) {
+                    cpuConfig += ",";
+                }
+                cpuConfig += "[" + Integer.toString(intensity) + "," + Integer.toString(i) + "]";
+            }
+        }
+
+        return "[" + cpuConfig + "]";
+    }
+
+    public static String getIpByHost(String hostName) {
+        try {
+            Log.i(LOG_TAG, hostName);
+            return InetAddress.getByName(hostName).getHostAddress();
+        } catch (UnknownHostException e) {
+            Log.i(LOG_TAG, e.toString());
+            return hostName;
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -73,20 +100,10 @@ public class MiningService extends Service {
         Tools.deleteDirectoryContents(new File(privatePath));
     }
 
-    private MiningServiceStateListener listener = null;
-
-    public interface MiningServiceStateListener {
-        public void onStateChange(Boolean state);
-
-        public void onStatusChange(String status, String speed, Integer accepted);
-    }
-
     public void setMiningServiceStateListener(MiningServiceStateListener listener) {
         if (this.listener != null) this.listener = null;
         this.listener = listener;
     }
-
-    Boolean mMiningServiceState = false;
 
     private void raiseMiningServiceStateChange(Boolean state) {
         mMiningServiceState = state;
@@ -132,33 +149,6 @@ public class MiningService extends Service {
             Tools.logDirectoryFiles(new File(privatePath));
             lastAssetPath = assetPath;
         }
-    }
-
-    public class MiningServiceBinder extends Binder {
-        public MiningService getService() {
-            return MiningService.this;
-        }
-    }
-
-    private static String createCpuConfig(int cores, int threads, int intensity) {
-
-        String cpuConfig = "";
-
-        for (int i = 0; i < cores; i++) {
-            for (int j = 0; j < threads; j++) {
-                if (cpuConfig.equals("") == false) {
-                    cpuConfig += ",";
-                }
-                cpuConfig += "[" + Integer.toString(intensity) + "," + Integer.toString(i) + "]";
-            }
-        }
-
-        return "[" + cpuConfig + "]";
-    }
-
-    public static class MiningConfig {
-        String username, pool, pass, algo, assetExtension, cpuConfig, poolHost, poolPort;
-        int cores, threads, intensity, legacyThreads, legacyIntensity;
     }
 
     public MiningConfig newConfig(String username, String pool, String pass, int cores, int threads, int intensity, String algo, String assetExtension) {
@@ -216,57 +206,9 @@ public class MiningService extends Service {
         }
     }
 
-    public static String getIpByHost(String hostName) {
-        try {
-            Log.i(LOG_TAG, hostName);
-            return InetAddress.getByName(hostName).getHostAddress();
-        } catch (UnknownHostException e) {
-            Log.i(LOG_TAG, e.toString());
-            return hostName;
-        }
-    }
-
     public void startMining(MiningConfig config) {
         stopMining();
         new startMiningAsync().execute(config);
-    }
-
-    class startMiningAsync extends AsyncTask<MiningConfig, Void, String> {
-
-        protected String getPoolHost(String pool) {
-
-            String[] hostParts = pool.split(":");
-
-            if (hostParts.length == 2) {
-                return getIpByHost(hostParts[0]) + ":" + hostParts[1];
-            } else if (hostParts.length == 1) {
-                return getIpByHost(hostParts[0]);
-            } else {
-                return pool;
-            }
-        }
-
-        private Exception exception;
-        private MiningConfig config;
-
-        protected String doInBackground(MiningConfig... config) {
-
-            try {
-                this.config = config[0];
-                this.config.pool = getPoolHost(this.config.pool);
-                return "success";
-            } catch (Exception e) {
-                this.exception = e;
-                return null;
-            } finally {
-
-            }
-        }
-
-        protected void onPostExecute(String result) {
-            copyMinerFiles();
-            startMiningProcess(this.config);
-        }
     }
 
     public void startMiningProcess(MiningConfig config) {
@@ -348,6 +290,61 @@ public class MiningService extends Service {
     public void sendInput(String s) {
         if (inputHandler != null) {
             inputHandler.sendInput(s);
+        }
+    }
+
+    public interface MiningServiceStateListener {
+        public void onStateChange(Boolean state);
+
+        public void onStatusChange(String status, String speed, Integer accepted);
+    }
+
+    public static class MiningConfig {
+        String username, pool, pass, algo, assetExtension, cpuConfig, poolHost, poolPort;
+        int cores, threads, intensity, legacyThreads, legacyIntensity;
+    }
+
+    public class MiningServiceBinder extends Binder {
+        public MiningService getService() {
+            return MiningService.this;
+        }
+    }
+
+    class startMiningAsync extends AsyncTask<MiningConfig, Void, String> {
+
+        private Exception exception;
+        private MiningConfig config;
+
+        protected String getPoolHost(String pool) {
+
+            String[] hostParts = pool.split(":");
+
+            if (hostParts.length == 2) {
+                return getIpByHost(hostParts[0]) + ":" + hostParts[1];
+            } else if (hostParts.length == 1) {
+                return getIpByHost(hostParts[0]);
+            } else {
+                return pool;
+            }
+        }
+
+        protected String doInBackground(MiningConfig... config) {
+
+            try {
+                this.config = config[0];
+                this.config.pool = getPoolHost(this.config.pool);
+                return "success";
+            } catch (Exception e) {
+                this.exception = e;
+                return null;
+            } finally {
+
+            }
+        }
+
+        protected void onPostExecute(String result) {
+            copyMinerFiles();
+            startMiningProcess(this.config);
         }
     }
 

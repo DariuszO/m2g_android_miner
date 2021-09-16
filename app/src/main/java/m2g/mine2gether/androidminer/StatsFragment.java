@@ -26,16 +26,12 @@ public class StatsFragment extends Fragment {
     public static String apiUrl;
     public static String apiUrlMerged;
     public static String statsUrl;
-
-    private TextView tvStatCheckOnline;
-
-    private TextView data;
-    private TextView dataNetwork;
-
-    private fetchData.statsChangeListener statsListener;
-
     Timer timer;
     long delay = 30000L;
+    private TextView tvStatCheckOnline;
+    private TextView data;
+    private TextView dataNetwork;
+    private fetchData.statsChangeListener statsListener;
 
     @Nullable
     @Override

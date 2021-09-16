@@ -91,7 +91,7 @@ public class Tools {
 
         for (final String f : folder) {
 
-            Boolean isDirectory = isAssetDirectory(context,assetFilePath + "/" + f);
+            Boolean isDirectory = isAssetDirectory(context, assetFilePath + "/" + f);
 
             if (isDirectory == false) {
                 Log.i(LOG_TAG, "copy file: source:" + assetFilePath + "/" + f + " dest:" + localFilePath + "/" + f);
@@ -111,13 +111,13 @@ public class Tools {
 
     }
 
-    private static boolean isAssetDirectory(Context context, String pathInAssetsDir){
+    private static boolean isAssetDirectory(Context context, String pathInAssetsDir) {
 
         InputStream inputStream = null;
         Boolean isDirectory = false;
         try {
             inputStream = context.getAssets().open(pathInAssetsDir);
-        }  catch(IOException e) {
+        } catch (IOException e) {
             isDirectory = true;
         } finally {
             try {

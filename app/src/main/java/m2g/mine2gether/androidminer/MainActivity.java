@@ -22,6 +22,8 @@
 
 package m2g.mine2gether.androidminer;
 
+import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
+
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -37,9 +39,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -50,45 +54,131 @@ import android.widget.Button;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.support.design.widget.NavigationView;
-import android.support.v4.widget.DrawerLayout;
 
 import java.util.Arrays;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private static final String LOG_TAG = "MiningSvc";
-    private DrawerLayout drawer;
-    boolean accepted = false;
-
     private final static String[] SUPPORTED_ARCHITECTURES = {"arm64-v8a", "armeabi-v7a", "x86", "x86_64"};
-
+    public static SharedPreferences preferences;
+    public static Context contextOfApplication;
+    static boolean lastIsCharging = false;
+    boolean accepted = false;
+    private DrawerLayout drawer;
     private TextView tvLog;
     private TextView edStatus;
     private TextView tvMiningTo;
-
     private TextView tvSpeed, tvAccepted;
     private boolean validArchitecture = true;
-    public static SharedPreferences preferences;
-
     private MiningService.MiningServiceBinder binder;
-
     private ScrollView svOutput;
-
-    public static Context contextOfApplication;
-
     private PowerManager pm;
     private PowerManager.WakeLock wl;
+    private Button minerBtn1, minerBtn2, minerBtn3;
+    private boolean minerPaused = false;
+    private boolean clearMinerLog = true;
+    private ServiceConnection serverConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            binder = (MiningService.MiningServiceBinder) iBinder;
+            if (validArchitecture) {
+                enableButtons(true);
+
+                findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) {
+                        if (minerPaused) {
+                            clearMinerLog = false;
+                        }
+                        minerPaused = false;
+                        setMiningState(v);
+                    }
+                });
+
+                setMiningButtonState(binder.getService().getMiningServiceState());
+
+                binder.getService().setMiningServiceStateListener(new MiningService.MiningServiceStateListener() {
+                    @Override
+                    public void onStateChange(Boolean state) {
+                        Log.i(LOG_TAG, "onMiningStateChange: " + state);
+                        runOnUiThread(() -> {
+                            setMiningButtonState(state);
+                            if (state) {
+                                if (clearMinerLog == true) {
+                                    tvLog.setText("");
+                                    tvAccepted.setText("0");
+                                    tvSpeed.setText("0");
+                                }
+                                clearMinerLog = true;
+                                Toast.makeText(contextOfApplication, "Miner Started", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(contextOfApplication, "Miner Stopped", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onStatusChange(String status, String speed, Integer accepted) {
+                        runOnUiThread(() -> {
+                            appendLogOutputText(status);
+                            tvAccepted.setText(Integer.toString(accepted));
+                            tvSpeed.setText(speed);
+                        });
+                    }
+
+                });
+
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            binder = null;
+            enableButtons(false);
+        }
+    };
+    private BroadcastReceiver batteryInfoReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent batteryStatus) {
+
+            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
+
+            if (lastIsCharging == isCharging) return;
+            lastIsCharging = isCharging;
+
+            Toast.makeText(contextOfApplication, (isCharging ? "Device Charging" : "Device on Battery"), Toast.LENGTH_SHORT).show();
+
+            if (PreferenceHelper.getName("pauseonbattery").equals("0") == true) {
+                minerPaused = false;
+                clearMinerLog = true;
+                return;
+            }
+
+            boolean state = false;
+            if (binder != null) {
+                state = binder.getService().getMiningServiceState();
+            }
+
+            if (isCharging) {
+                if (minerPaused) {
+                    minerPaused = false;
+                    clearMinerLog = false;
+                    startMining(null);
+                }
+            } else {
+                if (state) {
+                    minerPaused = true;
+                    stopMining(null);
+                } else {
+                    minerPaused = false;
+                }
+            }
+        }
+    };
 
     public static Context getContextOfApplication() {
         return contextOfApplication;
     }
-
-    private Button minerBtn1, minerBtn2, minerBtn3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -421,66 +511,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     }
 
-    private ServiceConnection serverConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            binder = (MiningService.MiningServiceBinder) iBinder;
-            if (validArchitecture) {
-                enableButtons(true);
-
-                findViewById(R.id.start).setOnClickListener(new View.OnClickListener() {
-                    public void onClick(View v) {
-                        if (minerPaused) {
-                            clearMinerLog = false;
-                        }
-                        minerPaused = false;
-                        setMiningState(v);
-                    }
-                });
-
-                setMiningButtonState(binder.getService().getMiningServiceState());
-
-                binder.getService().setMiningServiceStateListener(new MiningService.MiningServiceStateListener() {
-                    @Override
-                    public void onStateChange(Boolean state) {
-                        Log.i(LOG_TAG, "onMiningStateChange: " + state);
-                        runOnUiThread(() -> {
-                            setMiningButtonState(state);
-                            if (state) {
-                                if (clearMinerLog == true) {
-                                    tvLog.setText("");
-                                    tvAccepted.setText("0");
-                                    tvSpeed.setText("0");
-                                }
-                                clearMinerLog = true;
-                                Toast.makeText(contextOfApplication, "Miner Started", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(contextOfApplication, "Miner Stopped", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onStatusChange(String status, String speed, Integer accepted) {
-                        runOnUiThread(() -> {
-                            appendLogOutputText(status);
-                            tvAccepted.setText(Integer.toString(accepted));
-                            tvSpeed.setText(speed);
-                        });
-                    }
-
-                });
-
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            binder = null;
-            enableButtons(false);
-        }
-    };
-
     private void enableButtons(boolean enabled) {
         findViewById(R.id.start).setEnabled(enabled);
     }
@@ -490,48 +520,5 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             binder.getService().sendInput(s);
         }
     }
-
-    private boolean minerPaused = false;
-    private boolean clearMinerLog = true;
-    static boolean lastIsCharging = false;
-    private BroadcastReceiver batteryInfoReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context c, Intent batteryStatus) {
-
-            int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-            boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
-
-            if (lastIsCharging == isCharging) return;
-            lastIsCharging = isCharging;
-
-            Toast.makeText(contextOfApplication, (isCharging ? "Device Charging" : "Device on Battery"), Toast.LENGTH_SHORT).show();
-
-            if (PreferenceHelper.getName("pauseonbattery").equals("0") == true) {
-                minerPaused = false;
-                clearMinerLog = true;
-                return;
-            }
-
-            boolean state = false;
-            if (binder != null) {
-                state = binder.getService().getMiningServiceState();
-            }
-
-            if (isCharging) {
-                if (minerPaused) {
-                    minerPaused = false;
-                    clearMinerLog = false;
-                    startMining(null);
-                }
-            } else {
-                if (state) {
-                    minerPaused = true;
-                    stopMining(null);
-                } else {
-                    minerPaused = false;
-                }
-            }
-        }
-    };
 
 }

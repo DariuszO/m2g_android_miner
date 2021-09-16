@@ -21,7 +21,7 @@ public class AboutFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.fragment_about, container, false  );
+        View view = inflater.inflate(R.layout.fragment_about, container, false);
 
         TextView tvWebsite;
         TextView tvGithub;
@@ -51,7 +51,7 @@ public class AboutFragment extends Fragment {
             }
 
             tvSystemInfo.setText(i);
-        } catch (Exception e){
+        } catch (Exception e) {
 
         }
         return view;
